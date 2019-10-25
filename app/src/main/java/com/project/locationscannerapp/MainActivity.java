@@ -69,7 +69,7 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
     private LocationManager locationManager;
     private LocationListener locationListener;
     ArrayList markerPoints= new ArrayList();
-    private String API_KEY = "AIzaSyCeAtj28Qq_GmxpT__TlJtNcBuH8QrGSuc";
+    private String API_KEY = "AIzaSyDoaZlqCt5skSHFdD7T0bM5uTp56D4wnTc";
 
 
 
