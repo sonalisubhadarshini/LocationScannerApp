@@ -69,7 +69,10 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
     private LocationManager locationManager;
     private LocationListener locationListener;
     ArrayList markerPoints= new ArrayList();
+
     private String API_KEY = BuildConfig.GoogleSecAPIKEY;
+
+    private static final int REQUEST_ACCESS_FINE_LOCATION = 201;
 
 
 
@@ -89,11 +92,29 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
 
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.mapFragment);
+
+
         mapFragment.getMapAsync(this);
-        locationManager = (LocationManager) getSystemService(LOCATION_SERVICE);
-        if (ActivityCompat.checkSelfPermission(this,Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this,Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            return;
+        locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
+
+
+        if (ActivityCompat.checkSelfPermission(this,Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this,Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+
+
+        } else {
+            // No explanation needed; request the permission
+            ActivityCompat.requestPermissions(this,
+                    new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
+                    REQUEST_ACCESS_FINE_LOCATION);
+
+            // MY_PERMISSIONS_REQUEST_READ_CONTACTS is an
+            // app-defined int constant. The callback method gets the
+            // result of the request.
         }
+
+
+
+       // Log.d("location", String.valueOf(locationManager.isProviderEnabled(locationManager.NETWORK_PROVIDER)));
 
         if(locationManager.isProviderEnabled(locationManager.NETWORK_PROVIDER)){
             locationManager.requestLocationUpdates(locationManager.NETWORK_PROVIDER, 0, 0, new LocationListener() {
@@ -101,8 +122,15 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
                 public void onLocationChanged(Location location) {
                     double latitude = location.getLatitude();
                     double longitude = location.getLongitude();
+                    Log.d("Lattitude", String.valueOf(latitude));
 
                     LatLng latLng = new LatLng(latitude,longitude);
+
+                    markerPoints.add(latLng);
+
+                    LatLng prevLatlng = null;
+
+
                     Geocoder geocoder = new Geocoder(getApplicationContext());
 
                     try {
@@ -111,9 +139,14 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
                         String str = addressList.get(0).getLocality()+",";
                         str += addressList.get(0).getCountryName();
                         mMap.addMarker(new MarkerOptions().position(latLng).title(str));
-                        mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(
-                                new LatLng(latitude, longitude), 12.2f));
+
+                       if(prevLatlng == null || prevLatlng != latLng) {
+                            mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(
+                                    new LatLng(latitude, longitude), 12.2f));
+                        }
                      //   mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(latLng, 10.2f));
+
+                        prevLatlng = new LatLng(latitude,longitude);
                     }catch (IOException e){
                         e.printStackTrace();
                     }
@@ -143,8 +176,14 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
                 public void onLocationChanged(Location location) {
                     double latitude = location.getLatitude();
                     double longitude = location.getLongitude();
+                    Log.d("Lattitude", String.valueOf(latitude));
 
                     LatLng latLng = new LatLng(latitude,longitude);
+
+                    markerPoints.add(latLng);
+
+                    LatLng prevLatlng = null;
+
                     Geocoder geocoder = new Geocoder(getApplicationContext());
 
                     try {
@@ -155,12 +194,17 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
 
                         Log.d("Str",str);
                         mMap.addMarker(new MarkerOptions().position(latLng).title(str));
-                        mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(
-                                latLng, 10.2f));
+
+                        if(prevLatlng == null || prevLatlng != latLng) {
+                            mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(
+                                    latLng, 10.2f));
+                        }
+
                       //  mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(latLng, 10.2f));
                     }catch (IOException e){
                         e.printStackTrace();
                     }
+                    prevLatlng = new LatLng(latitude,longitude);
 
                 }
 
@@ -210,16 +254,18 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
 
                 markerOptions.position(latLng);
 
-                if (markerPoints.size() == 1) {
+                if (markerPoints.size() == 2) {
                     markerOptions.icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_GREEN));
-                } else if (markerPoints.size() == 2) {
-                    markerOptions.icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_RED));
                 }
+
+//                else if (markerPoints.size() == 2) {
+//                    markerOptions.icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_RED));
+//                }
 
                 mMap.addMarker(markerOptions);
 
                 // Checks, whether start and end locations are captured
-                if (markerPoints.size() >= 2) {
+                if (markerPoints.size() >= 1) {
                     LatLng origin = (LatLng) markerPoints.get(0);
                     LatLng dest = (LatLng) markerPoints.get(1);
 
@@ -235,7 +281,7 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
                     // Start downloading json data from Google Directions API
                     downloadTask.execute(url);
                     //move map camera
-                    mMap.moveCamera(CameraUpdateFactory.newLatLng(origin));
+                    mMap.moveCamera(CameraUpdateFactory.newLatLng(dest));
                     mMap.animateCamera(CameraUpdateFactory.zoomTo(11));
                 }
 
@@ -491,27 +537,25 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
 
     @Override
     public void onClick(View v) {
-        Toast.makeText(getApplicationContext(), "Selected",Toast.LENGTH_SHORT).show();
+     //   Toast.makeText(getApplicationContext(), "Selected",Toast.LENGTH_SHORT).show();
         Intent intent = new Intent(this, ScannedBarcodeActivity.class);
         startActivity(intent);
     }
 
 
 
-//    @Override
-//    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
-//        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-//
-//        if (grantResults.length>0 && grantResults[0] == PackageManager.PERMISSION_GRANTED){
-//
-//            if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED){
-//                locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER,0,0,locationListener);
-//
-//                Location lastKnownLocation = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
-//               // centreMapOnLocation(lastKnownLocation,"Your Location");
-//            }
-//        }
-//    }
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+
+        if (grantResults.length>0 && grantResults[0] == PackageManager.PERMISSION_GRANTED){
+
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED){
+
+               // centreMapOnLocation(lastKnownLocation,"Your Location");
+            }
+        }
+    }
 
 
 

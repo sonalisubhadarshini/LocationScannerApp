@@ -1,6 +1,7 @@
 package com.project.locationscannerapp;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 
@@ -9,6 +10,7 @@ import android.app.Activity;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Vibrator;
 import android.util.SparseArray;
@@ -31,6 +33,7 @@ public class ScannedBarcodeActivity extends AppCompatActivity {
     private static final int REQUEST_CAMERA_PERMISSION = 201;
     private BarcodeDetector barcodeDetector;
     private TextView textviewScanner;
+    private static final int REQUEST_PERMISSIONS = 20;
 
 
     @Override
@@ -41,96 +44,205 @@ public class ScannedBarcodeActivity extends AppCompatActivity {
         surfaceviewId = findViewById(R.id.surfaceviewId);
         textviewScanner = findViewById(R.id.textviewScanner);
 
-        if(ActivityCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED){
-            if (ActivityCompat.shouldShowRequestPermissionRationale(ScannedBarcodeActivity.this,
-                    Manifest.permission.CAMERA)) {
-                Toast.makeText(getApplicationContext(),"scanner",Toast.LENGTH_SHORT).show();
-                // Show an explanation to the user *asynchronously* -- don't block
-                // this thread waiting for the user's response! After the user
-                // sees the explanation, try again to request the permission.
-            } else {
-                // No explanation needed; request the permission
-                ActivityCompat.requestPermissions(ScannedBarcodeActivity.this,
-                        new String[]{Manifest.permission.CAMERA},
-                        REQUEST_CAMERA_PERMISSION);
+
+//        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+//            grantRuntimePermission();
+//        }
+
+
+
+//        if(ActivityCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED){
+//            if (ActivityCompat.shouldShowRequestPermissionRationale(ScannedBarcodeActivity.this,
+//                    Manifest.permission.CAMERA)) {
+//                Toast.makeText(getApplicationContext(),"scanner",Toast.LENGTH_SHORT).show();
+//                // Show an explanation to the user *asynchronously* -- don't block
+//                // this thread waiting for the user's response! After the user
+//                // sees the explanation, try again to request the permission.
+//            } else {
+//                // No explanation needed; request the permission
+//                ActivityCompat.requestPermissions(ScannedBarcodeActivity.this,
+//                        new String[]{Manifest.permission.CAMERA},
+//                        REQUEST_CAMERA_PERMISSION);
+//            }
 
                 // MY_PERMISSIONS_REQUEST_READ_CONTACTS is an
                 // app-defined int constant. The callback method gets the
                 // result of the request.
-            }
-        }
-
         barcodeDetector = new BarcodeDetector.Builder(this).setBarcodeFormats(Barcode.QR_CODE).build();
         cameraSource = new CameraSource.Builder(this,barcodeDetector).setRequestedPreviewSize(640,480).setAutoFocusEnabled(true).build();
 
+        if (ActivityCompat.checkSelfPermission(ScannedBarcodeActivity.this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
 
-        surfaceviewId.getHolder().addCallback(new SurfaceHolder.Callback() {
-            @Override
-            public void surfaceCreated(SurfaceHolder holder) {
+            initializeBarcode();
+
+        } else {
+            ActivityCompat.requestPermissions(ScannedBarcodeActivity.this, new
+                    String[]{Manifest.permission.CAMERA}, REQUEST_CAMERA_PERMISSION);
+
+            if (ActivityCompat.checkSelfPermission(ScannedBarcodeActivity.this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
+
+                initializeBarcode();
+
+            }
 
 
-                    try {
-                        cameraSource.start(holder);
-                    } catch (IOException e) {
-                        e.printStackTrace();
+        }
+
+
+
+
+
+            }
+
+
+            public void initializeBarcode(){
+
+
+                surfaceviewId.getHolder().addCallback(new SurfaceHolder.Callback() {
+                    @Override
+                    public void surfaceCreated(SurfaceHolder holder) {
+
+
+                        try {
+                            cameraSource.start(holder);
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+
+
                     }
 
 
-            }
+                    @Override
+                    public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
 
+                    }
 
-            @Override
-            public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
+                    @Override
+                    public void surfaceDestroyed(SurfaceHolder holder) {
+                        cameraSource.stop();
 
-            }
-
-            @Override
-            public void surfaceDestroyed(SurfaceHolder holder) {
-                cameraSource.stop();
-
-            }
-        });
+                    }
+                });
 
 
 
 
-        barcodeDetector.setProcessor(new Detector.Processor<Barcode>() {
-            @Override
-            public void release() {
+                barcodeDetector.setProcessor(new Detector.Processor<Barcode>() {
+                    @Override
+                    public void release() {
 
-            }
+                    }
 
-            @Override
-            public void receiveDetections(Detector.Detections<Barcode> detections) {
+                    @Override
+                    public void receiveDetections(Detector.Detections<Barcode> detections) {
 
-                final SparseArray<Barcode> qrCodes = detections.getDetectedItems();
+                        final SparseArray<Barcode> qrCodes = detections.getDetectedItems();
 
-                if(qrCodes.size() != 0){
+                        if(qrCodes.size() != 0){
 
-                    textviewScanner.post(new Runnable() {
-                        @Override
-                        public void run() {
-                            Vibrator vibrator = (Vibrator) getApplicationContext().getSystemService(VIBRATOR_SERVICE);
-                            vibrator.vibrate(1000);
+                            textviewScanner.post(new Runnable() {
+                                @Override
+                                public void run() {
+                                    Vibrator vibrator = (Vibrator) getApplicationContext().getSystemService(VIBRATOR_SERVICE);
+                                    vibrator.vibrate(1000);
 
-                            String url = "https://twitter.com/intent/tweet?text="+qrCodes.valueAt(0).displayValue+"";
-                            Intent i = new Intent(Intent.ACTION_VIEW);
-                            i.setData(Uri.parse(url));
-                            startActivity(i);
+                                    String url = "https://twitter.com/intent/tweet?text="+qrCodes.valueAt(0).displayValue+"";
+                                    Intent i = new Intent(Intent.ACTION_VIEW);
+                                    i.setData(Uri.parse(url));
+                                    startActivity(i);
 //                            Toast.makeText(getApplicationContext(),qrCodes.valueAt(0).displayValue,Toast.LENGTH_SHORT).show();
 //                            Intent intent = new Intent(ScannedBarcodeActivity.this,MainActivity.class);
 //
 //                            intent.putExtra("qrCodeValues",qrCodes.valueAt(0).displayValue);
 //                            startActivity(intent);
 
-                        }
-                    });
+                                }
+                            });
 
-                }
+                        }
+
+                    }
+                });
 
             }
-        });
+
+
+//    @Override
+//    protected void onPause() {
+//        super.onPause();
+//        cameraSource.release();
+//    }
+//
+//    @Override
+//    protected void onResume() {
+//        super.onResume();
+//        initialiseDetectorsAndSources();
+//    }
+
+
+
+
+//    @Override
+//    protected void onResume() {
+//        super.onResume();
+//
+//
+//
+//
+//
+//
+//
+//        barcodeDetector.setProcessor(new Detector.Processor<Barcode>() {
+//            @Override
+//            public void release() {
+//
+//            }
+//
+//            @Override
+//            public void receiveDetections(Detector.Detections<Barcode> detections) {
+//
+//                final SparseArray<Barcode> qrCodes = detections.getDetectedItems();
+//
+//                if(qrCodes.size() != 0){
+//
+//                    textviewScanner.post(new Runnable() {
+//                        @Override
+//                        public void run() {
+//                            Vibrator vibrator = (Vibrator) getApplicationContext().getSystemService(VIBRATOR_SERVICE);
+//                            vibrator.vibrate(1000);
+//
+//                            String url = "https://twitter.com/intent/tweet?text="+qrCodes.valueAt(0).displayValue+"";
+//                            Intent i = new Intent(Intent.ACTION_VIEW);
+//                            i.setData(Uri.parse(url));
+//                            startActivity(i);
+////                            Toast.makeText(getApplicationContext(),qrCodes.valueAt(0).displayValue,Toast.LENGTH_SHORT).show();
+////                            Intent intent = new Intent(ScannedBarcodeActivity.this,MainActivity.class);
+////
+////                            intent.putExtra("qrCodeValues",qrCodes.valueAt(0).displayValue);
+////                            startActivity(intent);
+//
+//                        }
+//                    });
+//
+//                }
+//
+//            }
+//        });
+//
+//
+//    }
+
+    private void grantRuntimePermission() {
+//
+      ActivityCompat.requestPermissions(ScannedBarcodeActivity.this,
+                        new String[]{Manifest.permission.CAMERA},
+                        REQUEST_CAMERA_PERMISSION);
+
     }
+
+
+
 
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
@@ -139,6 +251,11 @@ public class ScannedBarcodeActivity extends AppCompatActivity {
                 // If request is cancelled, the result arrays are empty.
                 if (grantResults.length > 0
                         && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+
+                    Toast.makeText(getApplicationContext(),"Permission Accepted", Toast.LENGTH_LONG);
+
+
+
                     // permission was granted, yay! Do the
                     // contacts-related task you need to do.
                 } else {

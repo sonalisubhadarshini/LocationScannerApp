@@ -1,5 +1,10 @@
 apply plugin: 'com.android.application'
 
+def GEO_API_KEY = '"'+GoolgeGeoAPIKey+'"' ?: 'No Api key is detected'
+def String_ARRAY = 'String[]'
+def BOOLEAN = 'boolean'
+
+
 android {
     compileSdkVersion 29
     buildToolsVersion "29.0.2"
@@ -10,19 +15,23 @@ android {
         versionCode 1
         versionName "1.0"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+
+        buildTypes.each {
+        it.buildConfigField 'String', 'GoogleSecAPIKEY', GEO_API_KEY
+    }
+//        manifestPlaceholders = [ GEO_API_KEY:GEO_API_KEY]
+
     }
 
-    buildTypes.each {
-        it.buildConfigField 'String', 'GoogleSecAPIKEY', GoolgeAPIKey
-    }
+//
 
     buildTypes {
         debug {
-            manifestPlaceholders = [ mapApiKeyValue:GoolgeAPIKey]
+            manifestPlaceholders = [ GEO_API_KEY: '"'+GoolgeGeoAPIKey+'"']
         }
 
         release {
-            manifestPlaceholders = [ mapApiKeyValue:GoolgeAPIKey]
+            manifestPlaceholders = [ GEO_API_KEY:GEO_API_KEY]
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
