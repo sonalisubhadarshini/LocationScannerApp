@@ -44,6 +44,7 @@ import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
+import com.google.android.gms.maps.model.Polyline;
 import com.google.android.gms.maps.model.PolylineOptions;
 
 import org.json.JSONArray;
@@ -69,10 +70,14 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
     private LocationManager locationManager;
     private LocationListener locationListener;
     ArrayList markerPoints= new ArrayList();
+    LatLng markerLocation;
+    Marker marker2 = null;
+    Polyline polylines;
+    private String currentLocation;
 
     private String API_KEY = BuildConfig.GoogleSecAPIKEY;
 
-    private static final int REQUEST_ACCESS_FINE_LOCATION = 201;
+    private static final int REQUEST_PERMISSION = 201;
 
 
 
@@ -104,8 +109,8 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
         } else {
             // No explanation needed; request the permission
             ActivityCompat.requestPermissions(this,
-                    new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
-                    REQUEST_ACCESS_FINE_LOCATION);
+                    new String[]{Manifest.permission.ACCESS_FINE_LOCATION,Manifest.permission.ACCESS_COARSE_LOCATION,Manifest.permission.CAMERA},
+                    REQUEST_PERMISSION);
 
             // MY_PERMISSIONS_REQUEST_READ_CONTACTS is an
             // app-defined int constant. The callback method gets the
@@ -126,7 +131,7 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
 
                     LatLng latLng = new LatLng(latitude,longitude);
 
-                    markerPoints.add(latLng);
+                    markerLocation = latLng;
 
                     LatLng prevLatlng = null;
 
@@ -138,6 +143,7 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
                         List<Address> addressList = geocoder.getFromLocation(latitude, longitude, 1);
                         String str = addressList.get(0).getLocality()+",";
                         str += addressList.get(0).getCountryName();
+                        currentLocation = str;
                         mMap.addMarker(new MarkerOptions().position(latLng).title(str));
 
                        if(prevLatlng == null || prevLatlng != latLng) {
@@ -180,7 +186,7 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
 
                     LatLng latLng = new LatLng(latitude,longitude);
 
-                    markerPoints.add(latLng);
+                    markerLocation = latLng;
 
                     LatLng prevLatlng = null;
 
@@ -191,6 +197,8 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
                         List<Address> addressList = geocoder.getFromLocation(latitude, longitude, 1);
                         String str = addressList.get(0).getLocality()+",";
                         str += addressList.get(0).getCountryName();
+
+                        currentLocation = str;
 
                         Log.d("Str",str);
                         mMap.addMarker(new MarkerOptions().position(latLng).title(str));
@@ -244,30 +252,40 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
         mMap.setOnMapClickListener(new GoogleMap.OnMapClickListener() {
             @Override
             public void onMapClick(LatLng latLng) {
-                if (markerPoints.size() > 1) {
+                MarkerOptions markerOptions = new MarkerOptions();
+                if (markerPoints.size() >= 1) {
                     markerPoints.clear();
-                    mMap.clear();
+
+                    marker2.remove();
+                    polylines.remove();
+
+                   // mMap.clear();
+
+
                 }
                 markerPoints.add(latLng);
 
-                MarkerOptions markerOptions = new MarkerOptions();
+
 
                 markerOptions.position(latLng);
 
-                if (markerPoints.size() == 2) {
+                if (markerPoints.size() == 1) {
                     markerOptions.icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_GREEN));
                 }
+
 
 //                else if (markerPoints.size() == 2) {
 //                    markerOptions.icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_RED));
 //                }
 
-                mMap.addMarker(markerOptions);
+               marker2 =  mMap.addMarker(markerOptions);
 
                 // Checks, whether start and end locations are captured
-                if (markerPoints.size() >= 1) {
-                    LatLng origin = (LatLng) markerPoints.get(0);
-                    LatLng dest = (LatLng) markerPoints.get(1);
+                if (markerPoints.size() == 1) {
+                   // LatLng origin = (LatLng) markerLocation.;
+
+                    LatLng origin = markerLocation;
+                    LatLng dest = (LatLng) markerPoints.get(0);
 
                     String url = getUrl(origin,dest);
 
@@ -398,7 +416,7 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
 
             // Drawing polyline in the Google Map for the i-th route
             if(lineOptions != null) {
-                mMap.addPolyline(lineOptions);
+               polylines =  mMap.addPolyline(lineOptions);
             }
             else {
                 Log.d("onPostExecute","without Polylines drawn");
@@ -539,6 +557,7 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
     public void onClick(View v) {
      //   Toast.makeText(getApplicationContext(), "Selected",Toast.LENGTH_SHORT).show();
         Intent intent = new Intent(this, ScannedBarcodeActivity.class);
+        intent.putExtra("Current Location",currentLocation);
         startActivity(intent);
     }
 

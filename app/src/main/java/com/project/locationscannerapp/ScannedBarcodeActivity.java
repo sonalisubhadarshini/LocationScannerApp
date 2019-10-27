@@ -25,6 +25,8 @@ import com.google.android.gms.vision.barcode.Barcode;
 import com.google.android.gms.vision.barcode.BarcodeDetector;
 
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
 
 public class ScannedBarcodeActivity extends AppCompatActivity {
     private SurfaceView surfaceviewId;
@@ -33,7 +35,8 @@ public class ScannedBarcodeActivity extends AppCompatActivity {
     private static final int REQUEST_CAMERA_PERMISSION = 201;
     private BarcodeDetector barcodeDetector;
     private TextView textviewScanner;
-    private static final int REQUEST_PERMISSIONS = 20;
+    private String CurrentLocation;
+
 
 
     @Override
@@ -43,6 +46,10 @@ public class ScannedBarcodeActivity extends AppCompatActivity {
 
         surfaceviewId = findViewById(R.id.surfaceviewId);
         textviewScanner = findViewById(R.id.textviewScanner);
+
+        Intent intent = getIntent();
+
+        CurrentLocation = intent.getStringExtra("Current Location");
 
 
 //        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
@@ -126,8 +133,6 @@ public class ScannedBarcodeActivity extends AppCompatActivity {
                 });
 
 
-
-
                 barcodeDetector.setProcessor(new Detector.Processor<Barcode>() {
                     @Override
                     public void release() {
@@ -144,18 +149,23 @@ public class ScannedBarcodeActivity extends AppCompatActivity {
                             textviewScanner.post(new Runnable() {
                                 @Override
                                 public void run() {
-                                    Vibrator vibrator = (Vibrator) getApplicationContext().getSystemService(VIBRATOR_SERVICE);
-                                    vibrator.vibrate(1000);
 
-                                    String url = "https://twitter.com/intent/tweet?text="+qrCodes.valueAt(0).displayValue+"";
-                                    Intent i = new Intent(Intent.ACTION_VIEW);
-                                    i.setData(Uri.parse(url));
-                                    startActivity(i);
-//                            Toast.makeText(getApplicationContext(),qrCodes.valueAt(0).displayValue,Toast.LENGTH_SHORT).show();
-//                            Intent intent = new Intent(ScannedBarcodeActivity.this,MainActivity.class);
-//
-//                            intent.putExtra("qrCodeValues",qrCodes.valueAt(0).displayValue);
-//                            startActivity(intent);
+//                                    Vibrator vibrator = (Vibrator) getApplicationContext().getSystemService(VIBRATOR_SERVICE);
+//                                    vibrator.vibrate(1000);
+
+                                    if (qrCodes.valueAt(0).displayValue != null) {
+
+                                      //  vibrator.cancel();
+                                        textviewScanner.removeCallbacks(null);
+                                        String text = qrCodes.valueAt(0).displayValue+"\n"+CurrentLocation;
+                                        String url = "https://twitter.com/intent/tweet?text="+urlEncode(text)+"";
+
+                                        Intent i = new Intent(Intent.ACTION_VIEW);
+                                        i.setData(Uri.parse(url));
+                                        startActivity(i);
+                                    }
+                                    
+
 
                                 }
                             });
@@ -232,6 +242,15 @@ public class ScannedBarcodeActivity extends AppCompatActivity {
 //
 //
 //    }
+
+
+    private String urlEncode(String s) {
+        try {
+            return URLEncoder.encode(s, "UTF-8");
+        } catch (UnsupportedEncodingException e) {
+            return "";
+        }
+    }
 
     private void grantRuntimePermission() {
 //
