@@ -162,9 +162,14 @@ public class ScannedBarcodeActivity extends AppCompatActivity {
 
                                         Intent i = new Intent(Intent.ACTION_VIEW);
                                         i.setData(Uri.parse(url));
+
                                         startActivity(i);
+                                        finish();
+
                                     }
-                                    
+
+
+
 
 
                                 }
@@ -178,7 +183,8 @@ public class ScannedBarcodeActivity extends AppCompatActivity {
             }
 
 
-//    @Override
+
+    //    @Override
 //    protected void onPause() {
 //        super.onPause();
 //        cameraSource.release();
